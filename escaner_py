@@ -1,0 +1,91 @@
+"""
+ESCANER BIOMETRICO FACIAL, QUE RECONOCE ROSTRO, Y GENERA UN ARCHIVO CON LA ASISTENCIA
+
+CREADO POR ALUMNOS DE SENATI:
+AUTORES: Zanabria Hurtado Yoselyn Patricia
+         Victorio Zanabria Kevin Dax
+
+"""
+
+import face_recognition as fr
+from pathlib import Path
+import io
+import os
+from cv2 import cv2
+from datetime import datetime
+import numpy
+
+ruta = 'Empleados'
+
+empleados_nombres = []
+empleados_imagenes = []
+
+
+for carpeta, _ , archivos in os.walk(ruta):
+    for archivo in archivos:
+        archivo_actual = cv2.imread(f'{carpeta}/{archivo}')
+        empleados_imagenes.append(archivo_actual)
+        empleados_nombres.append(os.path.splitext(archivo)[0])
+
+def codificar(imagenes):
+    lista_codificados = []
+    for imagen in imagenes:
+        imagen_codificada = fr.face_encodings(imagen)[0]
+        lista_codificados.append(imagen_codificada)
+    return lista_codificados
+
+
+
+empleados_codificados = codificar(empleados_imagenes)
+
+
+#INSTANTANEA DE DEL VIDEO
+captura = cv2.VideoCapture(0, cv2.CAP_DSHOW)                #Usando la camara DirectShow
+captura.set(cv2.CAP_PROP_FPS,30)
+captura.set(cv2.CAP_PROP_FRAME_WIDTH,480)
+captura.set(cv2.CAP_PROP_FRAME_HEIGHT,360)
+#captura = cv2.VideoCapture(0, cv2.CAP_PROP_FPS)
+#exito, instantanea = captura.read()
+
+running= True
+while running:
+    exito, instantanea = captura.read()
+
+    if not exito:
+        print('La camara esta fallando')
+        running = False
+    else:
+        altura, ancho, profundidad = instantanea.shape
+
+        cara_instantanea = fr.face_locations(instantanea)
+        codificar_instantanea = fr.face_encodings(instantanea, cara_instantanea)
+
+        for caraubic, caracodif in zip(cara_instantanea, codificar_instantanea):
+            distancias = fr.face_distance(empleados_codificados, caracodif)
+            verificaciones = fr.compare_faces(empleados_codificados, caracodif)
+
+            indice_coincidencia = numpy.argmin(distancias)
+
+            if distancias[indice_coincidencia] > 0.6:
+                print('Usted no es un empleado')
+
+            else:
+                nombre = empleados_nombres[indice_coincidencia]
+                y1, x2, y2 , x1 = caraubic
+
+                cv2.putText(instantanea,'BIENVENIDO A SENATI',(int(ancho/2)-10,10),cv2.FONT_HERSHEY_COMPLEX,0.5,(0,255,0),1)
+                cv2.rectangle(instantanea, (x1,y1), (x2,y2),(0,255,0), 2 )
+                cv2.rectangle(instantanea, (x1,y2-20), (x2,y2),(0,255,0),cv2.FILLED)
+                cv2.putText(instantanea, nombre, (x1+5,y2-10), cv2.FONT_HERSHEY_COMPLEX, 0.5 , (255,255,255),1)
+
+
+
+
+
+        cv2.imshow('CAMARA WEB', instantanea)
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+                    running = False
+
+
+captura.release()               #cierra la camara web y libera a la variable captura
+cv2.destroyAllWindows()         #Cierra todas las ventanas abiertas por OpenCV
