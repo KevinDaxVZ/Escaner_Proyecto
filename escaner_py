@@ -38,6 +38,20 @@ def codificar(imagenes):
 
 empleados_codificados = codificar(empleados_imagenes)
 
+def asistencia(nombre):
+    f= open('asistencia.csv','r+')
+    contenido= f.readlines()
+    nombres_marcados= []
+
+    for linea in contenido:
+        nombres_marcados.append(linea.split(',')[0])
+
+    if nombre not in nombres_marcados:
+        hora_actual= datetime.today()
+        f.write(f'\n{nombre}, {hora_actual.strftime("%Hh%Mm%Hs")}')
+
+    f.close()
+
 
 #INSTANTANEA DE DEL VIDEO
 captura = cv2.VideoCapture(0, cv2.CAP_DSHOW)                #Usando la camara DirectShow
@@ -73,13 +87,12 @@ while running:
                 nombre = empleados_nombres[indice_coincidencia]
                 y1, x2, y2 , x1 = caraubic
 
+                asistencia(nombre)
+
                 cv2.putText(instantanea,'BIENVENIDO A SENATI',(int(ancho/2)-10,10),cv2.FONT_HERSHEY_COMPLEX,0.5,(0,255,0),1)
                 cv2.rectangle(instantanea, (x1,y1), (x2,y2),(0,255,0), 2 )
                 cv2.rectangle(instantanea, (x1,y2-20), (x2,y2),(0,255,0),cv2.FILLED)
                 cv2.putText(instantanea, nombre, (x1+5,y2-10), cv2.FONT_HERSHEY_COMPLEX, 0.5 , (255,255,255),1)
-
-
-
 
 
         cv2.imshow('CAMARA WEB', instantanea)
